@@ -5,6 +5,7 @@ a
 d
 Edges attached to Node b
 a 3
+d 4
 a 5
 Edges attached to Node c
 a 3
@@ -14,6 +15,7 @@ a
 d
 Edges attached to Node c
 a 3
+d 4
 a 5
 checking that node b has been destroyed
 exception caught

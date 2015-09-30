@@ -12,7 +12,9 @@ int main() {
 	gCopy.addNode("d");
 	
 	gCopy.addEdge("b","a",3);
+	gCopy.addEdge("b","d",4);
 	gCopy.addEdge("b","a",5);
+	
 	gCopy.addEdge("c","a",3);
 	
 	std::cout << "Graph before node merge" << std::endl;

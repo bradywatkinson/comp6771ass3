@@ -26,6 +26,7 @@ int main() {
 	
 	std::cout << "deleting node a" << std::endl;
 	gCopy.deleteNode("a");
+	//gCopy.printGraph();
 	gCopy.printEdges("b");
 	std::cout << "Graph after node/edge deletion" << std::endl;
 	gCopy.printNodes();

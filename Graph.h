@@ -31,7 +31,7 @@ namespace cs6771
 
 			// value type
 			reference operator*() const {
-				if (DEBUG) std::cout << "testing *: "<< (*it)->val_ << std::endl;
+				//if (DEBUG) std::cout << "testing *: "<< (*it)->val_ << std::endl;
 				return (*it)->val_;
 			}
 			// reference type
@@ -53,7 +53,7 @@ namespace cs6771
 			}
 			// equals
 			bool operator==(const Node_Iterator& other) const {
-				if (DEBUG) std::cout << "testing ==: " << end << " " << other.end << std::endl;
+				//if (DEBUG) std::cout << "testing ==: " << end << " " << other.end << std::endl;
 				if (end && other.end) {
 					return true;
 				} else if (end || other.end) {
@@ -63,7 +63,7 @@ namespace cs6771
 			};
 			// not equals
 			bool operator!=(const Node_Iterator& other) const {
-				if (DEBUG) std::cout << "testing !=" << std::endl;
+				//if (DEBUG) std::cout << "testing !=" << std::endl;
 				return !operator==(other);
 			}
 
@@ -112,7 +112,7 @@ namespace cs6771
 
 			// value type
 			reference operator*() const {
-				if (DEBUG) std::cout << "testing *: "<< (*it)->val_ << std::endl;
+				//if (DEBUG) std::cout << "testing *: "<< (*it)->val_ << std::endl;
 				return (*it)->val_;
 			}
 			// reference type
@@ -134,7 +134,7 @@ namespace cs6771
 			}
 			// equals
 			bool operator==(const Edge_Iterator& other) const {
-				if (DEBUG) std::cout << "testing ==: " << end << " " << other.end << std::endl;
+				//if (DEBUG) std::cout << "testing ==: " << end << " " << other.end << std::endl;
 				if (end && other.end) {
 					return true;
 				} else if (end || other.end) {
@@ -144,7 +144,7 @@ namespace cs6771
 			};
 			// not equals
 			bool operator!=(const Edge_Iterator& other) const {
-				if (DEBUG) std::cout << "testing !=" << std::endl;
+				//if (DEBUG) std::cout << "testing !=" << std::endl;
 				return !operator==(other);
 			}
 
@@ -154,23 +154,32 @@ namespace cs6771
 				if (node == nullptr || node->edges_.empty()) {
 					end = true;
 				} else {
+					// create a vector of all the edges
 					std::for_each(node->edges_.begin(),node->edges_.end(),
-						[this] (const std::shared_ptr<Edge>& e) 
-							{ myedges_.push_back(e); });				
-
-					std::sort(myedges_.begin(),myedges_.end(),
-						[] (const std::shared_ptr<Edge>& a, const std::shared_ptr<Edge>& b) {
-							if (a->val_ == b->val_) {
-								if (auto tmpa = a->dest.lock()) {
-									if (auto tmpb = b->dest.lock()) {
-										return tmpa->val_ < tmpb->val_;
+						[this] (const std::shared_ptr<Edge>& e)
+							// only add them if the still exist
+							{ if (auto tmpa = e->dest.lock()) {
+								myedges_.push_back(e); }
+							});				
+					if (myedges_.empty()) {
+						if (DEBUG) std::cout << "Edge_Iterator constructor: all edges were dead" << std::endl;
+						end = true;
+						
+					} else {
+						std::sort(myedges_.begin(),myedges_.end(),
+							[] (const std::shared_ptr<Edge>& a, const std::shared_ptr<Edge>& b) {
+								if (a->val_ == b->val_) {
+									if (auto tmpa = a->dest.lock()) {
+										if (auto tmpb = b->dest.lock()) {
+											return tmpa->val_ < tmpb->val_;
+										}
 									}
 								}
-							}
-							return a->val_ < b->val_;
-						});
-					it = myedges_.begin();
-					end = false;
+								return a->val_ < b->val_;
+							});
+						it = myedges_.begin();
+						end = false;
+					}
 				}
 			}
 
@@ -209,6 +218,10 @@ namespace cs6771
 					for (std::shared_ptr<Edge> e : edges_) (*e).printEdge();
 					std::cout << std::endl;
 				} 
+				~Node() {
+					// for (auto e : edges_) delete e;
+					edges_.erase(edges_.begin(), edges_.end());
+				}
 			};
 
 			struct Edge
@@ -225,15 +238,16 @@ namespace cs6771
 					if (auto tmp = dest.lock())
 						std::cout << "[" << val_ << "] " << tmp->val_ << " ";
 				}
+				~Edge() {
+					orig.reset();
+					dest.reset();
+				}
 			};
 
 		public:
 
-			friend class Node_Iterator<N,E>;
-			typedef Node_Iterator<N,E> Node_Iterator;
-			
-			friend class Edge_Iterator<N,E>;
-			typedef Edge_Iterator<N,E> Edge_Iterator;
+			friend class Node_Iterator<N, E>;
+			friend class Edge_Iterator<N, E>;
 			
 			Graph() :
 				nodes_{}
@@ -254,11 +268,22 @@ namespace cs6771
 			{
 			};
 
-			//=copy Operator
+			//=copy Operator (deep copy)
 			Graph& operator=(const Graph &g)
 			{
-				if (this != g) {
-					nodes_ = g.nodes_;
+				if (nodes_ != g.nodes_) {
+					nodes_.erase(nodes_.begin(),nodes_.end());
+					for (auto node : g.nodes_) {
+						//auto newNode = std::make_shared<Node>(Node{node->second->val_});
+						nodes_[node.second->val_] = std::make_shared<Node>(Node{node.second->val_});
+						for (auto edge : node.second->edges_) {
+							if (auto tmp1 = edge->dest.lock()) {
+								if (auto tmp2 = edge->dest.lock()) {
+									nodes_[node.second->val_]->edges_.insert(std::make_shared<Edge>(Edge(tmp1,tmp2,edge->val_)));
+								}
+							}
+						}
+					}
 				}
 				return *this;
 			}
@@ -266,7 +291,7 @@ namespace cs6771
 			//=move Operator
 			Graph& operator=(Graph &&g)
 			{
-				if (this != g) {
+				if (this.nodes_ != g.nodes_) {
 					nodes_ = std::move(g.nodes_);
 				}
 				return *this;
@@ -277,8 +302,9 @@ namespace cs6771
 				if (nodes_.find(val_) == nodes_.end()) {
 					if (DEBUG) std::cout << "adding: " << val_ << std::endl;
 					nodes_[val_] = std::make_shared<Node>(Node{val_});
-				} else if (DEBUG) {
-					std::cout << val_ << ": not added. Already exists" << std::endl;
+				} else {
+					if (DEBUG) std::cout << val_ << ": not added. Already exists" << std::endl;
+					return false;
 				}
 
 				return true;
@@ -297,6 +323,7 @@ namespace cs6771
 				// auto findEdge = std::find_if(findOrig->second->edges_.begin(),findOrig->second->edges_.end(),
 				// 							[val_] (const std::shared_ptr<Edge>& e) {return e->val_==val_;});
 
+				// find if the edge already exists (i.e an existing edge with the same value AND destination)
 				auto findEdge = std::find_if(findOrig->second->edges_.begin(),findOrig->second->edges_.end(),
 											[val,dest] (const std::shared_ptr<Edge>& e) {
 												if (e->val_ == val)
@@ -317,13 +344,14 @@ namespace cs6771
 				return false;
 			}
 
+			// replace the val in node with the new val
 			bool replace(const N& node, const N& val)
 			{
 				// check the node exists
 				auto findNode = nodes_.find(node);
 				if (findNode == nodes_.end()) throw std::runtime_error("replace: Node DNE");
 
-				// check if the new val_ exists
+				// check if val already exists
 				auto findval_ = nodes_.find(val);
 
 				if (findval_ == nodes_.end()) {
@@ -332,18 +360,67 @@ namespace cs6771
 					nodes_[val]->val_ = val;
 					nodes_.erase(findNode);
 					//findNode->second->val_ = 66;	
-					return false;
+					return true;
 				}
 				if (DEBUG) std::cout << "replace: " <<val << " already exists" << std::endl;
-				return true;
+				return false;
 			} 
+
+/*
+Replaces the data stored at a node with
+the data stored on another node in the graph. The first node passed as a parameter
+into the function is the node destroyed after the merge. If either of the two nodes
+isn't found in the graph than a std::runtime_error is thrown. After the merge the edges
+of both nodes are retained, except any edges between the two nodes that are merged.
+Additionally, you will need to double check that there are no duplicate edges in the merged node.
+*/
+			void mergeReplace(const N& oldNode, const N& newNode) {
+				auto findOld = nodes_.find(oldNode);
+				if (findOld == nodes_.end()) throw std::runtime_error("mergeReplace: old DNE");
+				auto findNew = nodes_.find(newNode);
+				if (findNew == nodes_.end()) throw std::runtime_error("mergeReplace: new DNE");
+				
+				// for each edge in oldNode
+				for (auto edge : findOld->second->edges_) {		
+					// if it still exists
+					if (auto lockedDest = edge->dest.lock()) {
+						// check if it exists in the new node
+						E val = edge->val_;
+						N dest = lockedDest->val_;
+						auto findEdge = std::find_if(findNew->second->edges_.begin(),findNew->second->edges_.end(),
+											[&val,&dest] (const std::shared_ptr<Edge>& e) {
+												// std::cout << "comparing " << e->val_ << " " << val << std::endl;
+												if (!(e->val_ < val) && !(val < e->val_))
+													if (auto tmp = e->dest.lock())
+														if (tmp->val_ == dest)
+															return true;
+												return false;
+											});
+						
+						// if it doesn't, add it
+						if (findEdge == findNew->second->edges_.end()) {
+							// if (DEBUG) std::cout << "adding edge: " << orig << " " << dest << " " << val << std::endl;
+							findNew->second->edges_.insert(std::make_shared<Edge>(Edge(findNew->second,lockedDest,edge->val_)));
+							
+							//findNew->second->edges_.insert(edge));
+							++findNew->second->numEdges_;
+						} else if (DEBUG) {
+							std::cout << "In mergeReplace: " << newNode << "->" << dest << " val: " << edge->val_ << " not added. Already exists" << std::endl;
+						}
+					// else go to next edge			
+					} else break;					
+				}
+				deleteNode (oldNode);
+			}
 
 			void deleteNode(const N& node) noexcept
 			{
 				auto findNode = nodes_.find(node);
 				if (findNode != nodes_.end()) {
 					if (DEBUG) std::cout << "deleting " << node << std::endl;
-					//delete findNode->second->edges_;
+					//delete &*(findNode->second);
+					//if (findNode->second.unique()) std::cout << "test" << std::endl;
+					findNode->second.reset();
 					nodes_.erase(findNode);
 				} else {
 					if (DEBUG) std::cout << "could not find " << node << std::endl;
@@ -366,12 +443,12 @@ namespace cs6771
 											});
 					if (findEdge != findNode->second->edges_.end()) {
 						findNode->second->edges_.erase(findEdge);
-						++findNode->second->numEdges_;
+						--findNode->second->numEdges_;
 					} else if (DEBUG) {
-						std::cout << "deleteEdge: no edge was found" << std::endl;
+						if (DEBUG) std::cout << "deleteEdge: no edge was found" << std::endl;
 					}
 				} else if (DEBUG) {
-					std::cout << "deleteEdge: origin: " << orig << " not found" << std::endl;
+					if (DEBUG) std::cout << "deleteEdge: origin: " << orig << " not found" << std::endl;
 				}
 			}
 
@@ -405,6 +482,7 @@ namespace cs6771
 			/*
 			 * Prints the nodes in descending number of edges order
 			 */
+			
 			void printNodes()
 			{
 				for (auto it = begin(); it != end(); ++it ) {
@@ -414,15 +492,19 @@ namespace cs6771
 
 			void printEdges(const N& node) const
 			{
+				// check if the node exists
+				auto findOrig = nodes_.find(node);
+				if (findOrig == nodes_.end()) throw std::runtime_error("printEdges: node DNE");
 				std::cout << "Edges attached to Node " << node << std::endl;
 				bool tmp = false;
 				for (auto it = edgeIteratorBegin(node); it != edgeIteratorEnd(node); ++it) {
+					//std::cout << findOrig->second->edges_.size() << std::endl;
 					std::cout << it.getDest() << " " << *it << std::endl;
 					tmp = true;
 				}
 				if (!tmp) std::cout << "(null)" << std::endl;
 			}
-
+			
 			void printGraph ()
 			{
 				std::cout << "Printing Graph" << std::endl;
@@ -431,35 +513,35 @@ namespace cs6771
 				}
 			}
 
-			Node_Iterator begin() const
+			Node_Iterator<N, E> begin() const
 			{
-
-				return Node_Iterator(&nodes_);
+				return Node_Iterator<N, E>(&nodes_);
 			};
 
 
-			Node_Iterator end() const
+			Node_Iterator<N, E> end() const
 			{
-				return Node_Iterator(nullptr);
+				return Node_Iterator<N, E>(nullptr);
 			}
 
-			Edge_Iterator edgeIteratorBegin(const N& node) const
+			Edge_Iterator<N, E> edgeIteratorBegin(const N& node) const
 			{
 				auto findNode = nodes_.find(node);
 				if (findNode != nodes_.end()) {
 					//if (findNode->second)
-					return Edge_Iterator(findNode->second);
+					return Edge_Iterator<N, E>(findNode->second);
 				}
 				throw std::runtime_error("edgeIteratorBegin: edge DNE");
 			}
 
-			Edge_Iterator edgeIteratorEnd (const N& node) const 
+			Edge_Iterator<N, E> edgeIteratorEnd (const N& node) const 
 			{
-				return Edge_Iterator(nullptr);
+				return Edge_Iterator<N, E>(nullptr);
 			}
 
 		private:
 			std::map< N, std::shared_ptr<Node> > nodes_;
+			void printTest (int i) {std::cout << "test " << i << std::endl;}
 	};
 }
 
