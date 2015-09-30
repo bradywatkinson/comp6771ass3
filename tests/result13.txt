@@ -1,0 +1,23 @@
+true
+false
+true
+Const graph: 
+c
+a
+b
+Edges attached to Node c
+b 1
+b 2
+Edges attached to Node a
+(null)
+Edges attached to Node b
+(null)
+Edges attached to Node c
+b 1
+b 2
+Edges attached to Node a
+(null)
+Edges attached to Node b
+(null)
+b 1
+b 2
