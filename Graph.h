@@ -25,7 +25,7 @@ namespace cs6771
 
 			typedef std::ptrdiff_t                     difference_type;
 			typedef std::forward_iterator_tag          iterator_category;
-			typedef N                                  value_type;
+			const typedef N                            value_type;
 			const typedef N*                           pointer;
 			const typedef N&                           reference;
 
@@ -54,6 +54,7 @@ namespace cs6771
 			// equals
 			bool operator==(const Node_Iterator& other) const {
 				//if (DEBUG) std::cout << "testing ==: " << end << " " << other.end << std::endl;
+				std::cout << end << " " << other.end << std::endl;
 				if (end && other.end) {
 					return true;
 				} else if (end || other.end) {
@@ -72,6 +73,7 @@ namespace cs6771
 			{
 				
 				if (nodes == nullptr) {
+				std::cout << "end" << std::endl;
 					end = true;
 				} else {
 					//nodes_ = new std::vector<std::shared_ptr<Node>>();
@@ -107,11 +109,11 @@ namespace cs6771
 			typedef typename Graph<N,E>::Node Node;
 			typedef typename Graph<N,E>::Edge Edge;
 
-			typedef std::ptrdiff_t               difference_type;
-			typedef std::forward_iterator_tag    iterator_category;
-			typedef std::pair<N,E>               value_type;
-			typedef value_type*                  pointer;
-			typedef value_type&                  reference;
+			typedef std::ptrdiff_t                     difference_type;
+			typedef std::forward_iterator_tag          iterator_category;
+			const typedef std::pair<N,E>               value_type;
+			const typedef value_type*                  pointer;
+			const typedef value_type&                  reference;
 
 			// value type
 			reference operator*() const {
@@ -551,6 +553,7 @@ Additionally, you will need to double check that there are no duplicate edges in
 
 			Node_Iterator<N, E> end() const
 			{
+				std::cout << "test" << std::endl;
 				return Node_Iterator<N, E>(nullptr);
 			}
 
