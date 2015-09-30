@@ -107,16 +107,23 @@ namespace cs6771
 			typedef typename Graph<N,E>::Node Node;
 			typedef typename Graph<N,E>::Edge Edge;
 
-			typedef std::ptrdiff_t                     difference_type;
-			typedef std::forward_iterator_tag          iterator_category;
-			typedef E                                  value_type;
-			const typedef E*                           pointer;
-			const typedef E&                           reference;
+			typedef std::ptrdiff_t               difference_type;
+			typedef std::forward_iterator_tag    iterator_category;
+			typedef std::pair<N,E>               value_type;
+			typedef value_type*                  pointer;
+			typedef value_type&                  reference;
 
 			// value type
 			reference operator*() const {
+				if (auto tmp = (*it)->dest.lock()) {
+					auto tmp2 = new std::pair<N,E>(tmp->val_,(*it)->val_);
+					return *tmp2; 
+					//return std::make_pair(tmp->val_,(*it)->val_);	
+					//return new std::pair<N,E>(tmp->val_,(*it)->val_);
+				}
+				throw std::runtime_error("getDest: Node DNE");
 				//if (DEBUG) std::cout << "testing *: "<< (*it)->val_ << std::endl;
-				return (*it)->val_;
+				
 			}
 			// reference type
 			pointer operator->() const {
@@ -143,7 +150,7 @@ namespace cs6771
 				} else if (end || other.end) {
 					return false;
 				}
-				return operator*() == (*other.it)->val_;
+				return operator*().second == (*other.it)->val_;
 			};
 			// not equals
 			bool operator!=(const Edge_Iterator& other) const {
@@ -506,7 +513,7 @@ Additionally, you will need to double check that there are no duplicate edges in
 			 * Prints the nodes in descending number of edges order
 			 */
 			
-			void printNodes()
+			void printNodes() const
 			{
 				for (auto it = begin(); it != end(); ++it ) {
 					std::cout << *it << std::endl;
@@ -522,7 +529,7 @@ Additionally, you will need to double check that there are no duplicate edges in
 				bool tmp = false;
 				for (auto it = edgeIteratorBegin(node); it != edgeIteratorEnd(node); ++it) {
 					//std::cout << findOrig->second->edges_.size() << std::endl;
-					std::cout << it.getDest() << " " << *it << std::endl;
+					std::cout << (*it).first << " " << (*it).second << std::endl;
 					tmp = true;
 				}
 				if (!tmp) std::cout << "(null)" << std::endl;
@@ -557,11 +564,15 @@ Additionally, you will need to double check that there are no duplicate edges in
 				throw std::runtime_error("edgeIteratorBegin: edge DNE");
 			}
 
-			Edge_Iterator<N, E> edgeIteratorEnd (const N& node = nullptr) const 
+			Edge_Iterator<N, E> edgeIteratorEnd (const N& node) const 
 			{
 				return Edge_Iterator<N, E>(nullptr);
 			}
 			
+			Edge_Iterator<N, E> edgeIteratorEnd () const 
+			{
+				return Edge_Iterator<N, E>(nullptr);
+			}
 
 		private:
 			std::map< N, std::shared_ptr<Node> > nodes_;
