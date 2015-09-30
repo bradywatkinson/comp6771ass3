@@ -77,7 +77,10 @@ namespace cs6771
 					//nodes_ = new std::vector<std::shared_ptr<Node>>();
 					std::for_each((*nodes).begin(),(*nodes).end(),
 						[this] (const std::pair<N,std::shared_ptr<Node>>& p) 
-							{ mynodes_.push_back(p.second); });
+							{
+								p.second->update();
+								mynodes_.push_back(p.second);
+							});
 
 					std::sort(mynodes_.begin(),mynodes_.end(),
 						[] (const std::shared_ptr<Node>& a, const std::shared_ptr<Node>& b) {
@@ -219,8 +222,13 @@ namespace cs6771
 					std::cout << std::endl;
 				} 
 				~Node() {
-					// for (auto e : edges_) delete e;
+					for (auto e : edges_) e.reset();
 					edges_.erase(edges_.begin(), edges_.end());
+				}
+				void update () {
+					numEdges_ = std::count_if(edges_.begin(),edges_.end(),
+										[] (std::shared_ptr<Edge> e)
+										{ return e->dest.lock(); });
 				}
 			};
 
@@ -266,20 +274,34 @@ namespace cs6771
 			//Destructor
 			~Graph()
 			{
+				for (auto node : nodes_) {
+					deleteNode(node.second->val_);
+					node.second.reset();
+				}
+				nodes_.erase(nodes_.begin(),nodes_.end());
 			};
 
 			//=copy Operator (deep copy)
 			Graph& operator=(const Graph &g)
 			{
+				if (DEBUG) std::cout << "copy operator" << std::endl;
 				if (nodes_ != g.nodes_) {
 					nodes_.erase(nodes_.begin(),nodes_.end());
+					// add all the nodes to the new graph
 					for (auto node : g.nodes_) {
 						//auto newNode = std::make_shared<Node>(Node{node->second->val_});
 						nodes_[node.second->val_] = std::make_shared<Node>(Node{node.second->val_});
+					}
+					// add all the edges
+					for (auto node : g.nodes_) {
 						for (auto edge : node.second->edges_) {
+							if (DEBUG) (*edge).printEdge();
+							// must use successive if statements because of auto type deduction
 							if (auto tmp1 = edge->dest.lock()) {
+								auto orig = nodes_.find(tmp1->val_);
 								if (auto tmp2 = edge->dest.lock()) {
-									nodes_[node.second->val_]->edges_.insert(std::make_shared<Edge>(Edge(tmp1,tmp2,edge->val_)));
+									auto dest = nodes_.find(tmp2->val_);
+									nodes_[node.second->val_]->edges_.insert(std::make_shared<Edge>(Edge(orig->second,dest->second,edge->val_)));
 								}
 							}
 						}
@@ -291,6 +313,7 @@ namespace cs6771
 			//=move Operator
 			Graph& operator=(Graph &&g)
 			{
+				if (DEBUG) std::cout << "move operator" << std::endl;
 				if (this.nodes_ != g.nodes_) {
 					nodes_ = std::move(g.nodes_);
 				}
@@ -534,14 +557,14 @@ Additionally, you will need to double check that there are no duplicate edges in
 				throw std::runtime_error("edgeIteratorBegin: edge DNE");
 			}
 
-			Edge_Iterator<N, E> edgeIteratorEnd (const N& node) const 
+			Edge_Iterator<N, E> edgeIteratorEnd (const N& node = nullptr) const 
 			{
 				return Edge_Iterator<N, E>(nullptr);
 			}
+			
 
 		private:
 			std::map< N, std::shared_ptr<Node> > nodes_;
-			void printTest (int i) {std::cout << "test " << i << std::endl;}
 	};
 }
 
