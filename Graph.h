@@ -54,7 +54,7 @@ namespace cs6771
 			// equals
 			bool operator==(const Node_Iterator& other) const {
 				//if (DEBUG) std::cout << "testing ==: " << end << " " << other.end << std::endl;
-				std::cout << end << " " << other.end << std::endl;
+				//std::cout << end << " " << other.end << std::endl;
 				if (end && other.end) {
 					return true;
 				} else if (end || other.end) {
@@ -73,7 +73,7 @@ namespace cs6771
 			{
 				
 				if (nodes == nullptr) {
-				std::cout << "end" << std::endl;
+				//std::cout << "end" << std::endl;
 					end = true;
 				} else {
 					//nodes_ = new std::vector<std::shared_ptr<Node>>();
@@ -323,7 +323,7 @@ namespace cs6771
 			Graph& operator=(Graph &&g)
 			{
 				if (DEBUG) std::cout << "move operator" << std::endl;
-				if (this.nodes_ != g.nodes_) {
+				if ((*this).nodes_ != g.nodes_) {
 					nodes_ = std::move(g.nodes_);
 				}
 				return *this;
@@ -358,9 +358,9 @@ namespace cs6771
 				// find if the edge already exists (i.e an existing edge with the same value AND destination)
 				auto findEdge = std::find_if(findOrig->second->edges_.begin(),findOrig->second->edges_.end(),
 											[val,dest] (const std::shared_ptr<Edge>& e) {
-												if (e->val_ == val)
+												if (!(e->val_ < val) && !(val < e->val_))
 													if (auto tmp = e->dest.lock())
-														if (tmp->val_ == dest)
+														if (!(tmp->val_ < dest) && !(dest < tmp->val_))
 															return true;
 												return false;
 											});
@@ -424,7 +424,7 @@ Additionally, you will need to double check that there are no duplicate edges in
 												// std::cout << "comparing " << e->val_ << " " << val << std::endl;
 												if (!(e->val_ < val) && !(val < e->val_))
 													if (auto tmp = e->dest.lock())
-														if (tmp->val_ == dest)
+														if (!(tmp->val_ < dest) && !(dest < tmp->val_))
 															return true;
 												return false;
 											});
@@ -467,9 +467,9 @@ Additionally, you will need to double check that there are no duplicate edges in
 				if (findNode != nodes_.end()) {
 					auto findEdge = std::find_if(findNode->second->edges_.begin(), findNode->second->edges_.end(),
 											[dest, val] (const std::shared_ptr<Edge>& e) {
-												if (e->val_ == val)
+												if (!(e->val_ < val) && !(val < e->val_))
 													if (auto tmp = e->dest.lock())
-														if (tmp->val_ == dest)
+														if (!(tmp->val_ < dest) && !(dest < tmp->val_))
 															return true;
 												return false;
 											});
@@ -504,7 +504,7 @@ Additionally, you will need to double check that there are no duplicate edges in
 				auto findEdge = std::find_if(findOrig->second->edges_.begin(), findOrig->second->edges_.end(),
 											[dest] (const std::shared_ptr<Edge>& e) {
 												if (auto tmp = e->dest.lock())
-													if (tmp->val_ == dest)
+													if (!(tmp->val_ < dest) && !(dest < tmp->val_))
 														return true;
 												return false;
 											});
@@ -553,7 +553,7 @@ Additionally, you will need to double check that there are no duplicate edges in
 
 			Node_Iterator<N, E> end() const
 			{
-				std::cout << "test" << std::endl;
+				//std::cout << "test" << std::endl;
 				return Node_Iterator<N, E>(nullptr);
 			}
 
