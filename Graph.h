@@ -72,7 +72,7 @@ namespace cs6771
 			Node_Iterator(const std::map<N,std::shared_ptr<Node>> *nodes = nullptr)
 			{
 				
-				if (nodes == nullptr) {
+				if (nodes == nullptr || (*nodes).empty()) {
 				//std::cout << "end" << std::endl;
 					end = true;
 				} else {

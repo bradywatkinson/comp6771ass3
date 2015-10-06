@@ -25,4 +25,4 @@ if [ $com = "d" ]; then
 	make test$i
 	./test$i > tests/output$i.txt
 	diff tests/output$i.txt tests/result$i.txt -y | cat -e
-fi	
+fi
