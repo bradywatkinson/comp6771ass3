@@ -68,22 +68,30 @@ namespace cs6771
 				return !operator==(other);
 			}
 
+			Node_Iterator& operator=(const Node_Iterator &ni) {
+				mynodes_ 	= ni.mynodes_;
+				end 		= ni.end;
+				it 			= std::find(mynodes_.begin(),mynodes_.end(),*ni.it);
+				if (DEBUG) std::cout << "in copy operator" << std::endl;
+				return *this;
+			}
+
 			//Node_Iterator(std::vector<std::shared_ptr<Node>> v)
 			Node_Iterator(const std::map<N,std::shared_ptr<Node>> *nodes = nullptr)
 			{
-				
+				// if it is an end iterator or the graph is empty
+				// create a one after the end iterator
 				if (nodes == nullptr || (*nodes).empty()) {
-				//std::cout << "end" << std::endl;
 					end = true;
+				// otherwise add all the elements of nodes_ to the iterator container
 				} else {
-					//nodes_ = new std::vector<std::shared_ptr<Node>>();
 					std::for_each((*nodes).begin(),(*nodes).end(),
 						[this] (const std::pair<N,std::shared_ptr<Node>>& p) 
 							{
 								p.second->update();
 								mynodes_.push_back(p.second);
 							});
-
+				// sort the iterator container nodes
 					std::sort(mynodes_.begin(),mynodes_.end(),
 						[] (const std::shared_ptr<Node>& a, const std::shared_ptr<Node>& b) {
 							return a->numEdges_ != b->numEdges_ ?
@@ -124,7 +132,7 @@ namespace cs6771
 					//return new std::pair<N,E>(tmp->val_,(*it)->val_);
 				}
 				throw std::runtime_error("getDest: Node DNE");
-				//if (DEBUG) std::cout << "testing *: "<< (*it)->val_ << std::endl;
+				//if (DEBUG) std::cout << "ing *: "<< (*it)->val_ << std::endl;
 				
 			}
 			// reference type
@@ -181,7 +189,7 @@ namespace cs6771
 					} else {
 						std::sort(myedges_.begin(),myedges_.end(),
 							[] (const std::shared_ptr<Edge>& a, const std::shared_ptr<Edge>& b) {
-								if (a->val_ == b->val_) {
+								if (!(a->val_ < b->val_) && !(b->val_ < a->val_)) {
 									if (auto tmpa = a->dest.lock()) {
 										if (auto tmpb = b->dest.lock()) {
 											return tmpa->val_ < tmpb->val_;
@@ -400,6 +408,7 @@ namespace cs6771
 			} 
 
 			void mergeReplace(const N& oldNode, const N& newNode) {
+				// if either the old or new node DNE, throw an error
 				auto findOld = nodes_.find(oldNode);
 				if (findOld == nodes_.end()) throw std::runtime_error("mergeReplace: old DNE");
 				auto findNew = nodes_.find(newNode);
@@ -409,6 +418,10 @@ namespace cs6771
 				for (auto edge : findOld->second->edges_) {		
 					// if it still exists
 					if (auto lockedDest = edge->dest.lock()) {
+						// check it isn't an edge between old and new
+						if (!(lockedDest->val_ < newNode) && !(newNode < lockedDest->val_)) {
+							continue;
+						}
 						// check if it exists in the new node
 						E val = edge->val_;
 						N dest = lockedDest->val_;
@@ -424,7 +437,6 @@ namespace cs6771
 						
 						// if it doesn't, add it
 						if (findEdge == findNew->second->edges_.end()) {
-							// if (DEBUG) std::cout << "adding edge: " << orig << " " << dest << " " << val << std::endl;
 							findNew->second->edges_.insert(std::make_shared<Edge>(Edge(findNew->second,lockedDest,edge->val_)));
 							
 							//findNew->second->edges_.insert(edge));
@@ -433,7 +445,7 @@ namespace cs6771
 							std::cout << "In mergeReplace: " << newNode << "->" << dest << " val: " << edge->val_ << " not added. Already exists" << std::endl;
 						}
 					// else go to next edge			
-					} else break;					
+					} else continue;					
 				}
 				deleteNode (oldNode);
 			}

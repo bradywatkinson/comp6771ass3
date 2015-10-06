@@ -1,5 +1,35 @@
 CC=g++
-CFLAGS=-std=c++11 -Wall -Werror -O2 -DNDEBUG
+CFLAGS=-std=c++11 -Wall -Werror -O -DNDEBUG
+
+iteratorTestNode: tests/iteratorTestNode Graph.h
+	  $(CC) $(CFLAGS) tests/iteratorTestNode.cpp -o iteratorTestNode
+
+mergeReplace: tests/mergeReplace Graph.h
+	  $(CC) $(CFLAGS) tests/mergeReplace.cpp -o mergeReplace
+
+iteratorTestEdge: tests/iteratorTestEdge.cpp Graph.h
+	  $(CC) $(CFLAGS) tests/iteratorTestEdge.cpp -o iteratorTestEdge
+
+deletion: tests/deletion.cpp Graph.h
+	  $(CC) $(CFLAGS) tests/deletion.cpp -o deletion
+
+iteratorTest: tests/iteratorTest.cpp Graph.h
+	  $(CC) $(CFLAGS) tests/iteratorTest.cpp -o iteratorTest
+
+postIncrement: tests/postIncrement.cpp Graph.h
+	  $(CC) $(CFLAGS) tests/postIncrement.cpp -o postIncrement
+
+sameEdges: tests/sameEdges.cpp Graph.h
+	  $(CC) $(CFLAGS) tests/sameEdges.cpp -o sameEdges
+
+addDeleteEdge: tests/addDeleteEdge.cpp Graph.h
+	  $(CC) $(CFLAGS) tests/addDeleteEdge.cpp -o addDeleteEdge
+
+iteratorMemory: tests/iteratorMemory.cpp Graph.h
+	  $(CC) $(CFLAGS) tests/iteratorMemory.cpp -o iteratorMemory	
+
+addDelete: tests/addDelete.cpp Graph.h
+	  $(CC) $(CFLAGS) tests/addDelete.cpp -o addDelete
 
 test0: test0.cpp Graph.h
 	  $(CC) $(CFLAGS) test0.cpp -o test0
