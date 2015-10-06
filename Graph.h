@@ -53,14 +53,14 @@ namespace cs6771
 			}
 			// equals
 			bool operator==(const Node_Iterator& other) const {
-				//if (DEBUG) std::cout << "testing ==: " << end << " " << other.end << std::endl;
+				if (DEBUG) std::cout << "testing ==: " << end << " " << other.end << std::endl;
 				//std::cout << end << " " << other.end << std::endl;
 				if (end && other.end) {
 					return true;
 				} else if (end || other.end) {
 					return false;
 				}
-				return operator*() == (*other.it)->val_;
+				return !(operator*() < (*other.it)->val_) && !((*other.it)->val_ < operator*());
 			};
 			// not equals
 			bool operator!=(const Node_Iterator& other) const {
@@ -152,7 +152,7 @@ namespace cs6771
 				} else if (end || other.end) {
 					return false;
 				}
-				return operator*().second == (*other.it)->val_;
+				return !(operator*().second < (*other.it)->val_) && !((*other.it)->val_ < operator*().second);
 			};
 			// not equals
 			bool operator!=(const Edge_Iterator& other) const {
@@ -166,6 +166,7 @@ namespace cs6771
 				if (node == nullptr || node->edges_.empty()) {
 					end = true;
 				} else {
+					(*node).update();
 					// create a vector of all the edges
 					std::for_each(node->edges_.begin(),node->edges_.end(),
 						[this] (const std::shared_ptr<Edge>& e)
@@ -231,13 +232,15 @@ namespace cs6771
 					std::cout << std::endl;
 				} 
 				~Node() {
-					for (auto e : edges_) e.reset();
-					edges_.erase(edges_.begin(), edges_.end());
+					if (DEBUG) std::cout << "~node" << std::endl;
+					edges_.clear();
 				}
 				void update () {
-					numEdges_ = std::count_if(edges_.begin(),edges_.end(),
-										[] (std::shared_ptr<Edge> e)
-										{ return e->dest.lock(); });
+					for (auto it = edges_.begin(); it != edges_.end();) {
+						if (!((*it)->dest.lock()))	edges_.erase(it++);
+						else ++it;
+					}
+					numEdges_ = edges_.size();
 				}
 			};
 
@@ -256,6 +259,7 @@ namespace cs6771
 						std::cout << "[" << val_ << "] " << tmp->val_ << " ";
 				}
 				~Edge() {
+					if (DEBUG) std::cout << "~edge" << std::endl;
 					orig.reset();
 					dest.reset();
 				}
@@ -283,11 +287,8 @@ namespace cs6771
 			//Destructor
 			~Graph()
 			{
-				for (auto node : nodes_) {
-					deleteNode(node.second->val_);
-					node.second.reset();
-				}
-				nodes_.erase(nodes_.begin(),nodes_.end());
+				if (DEBUG) std::cout << "~graph" << std::endl;
+				nodes_.clear();
 			};
 
 			//=copy Operator (deep copy)
@@ -398,14 +399,6 @@ namespace cs6771
 				return false;
 			} 
 
-/*
-Replaces the data stored at a node with
-the data stored on another node in the graph. The first node passed as a parameter
-into the function is the node destroyed after the merge. If either of the two nodes
-isn't found in the graph than a std::runtime_error is thrown. After the merge the edges
-of both nodes are retained, except any edges between the two nodes that are merged.
-Additionally, you will need to double check that there are no duplicate edges in the merged node.
-*/
 			void mergeReplace(const N& oldNode, const N& newNode) {
 				auto findOld = nodes_.find(oldNode);
 				if (findOld == nodes_.end()) throw std::runtime_error("mergeReplace: old DNE");
@@ -450,8 +443,6 @@ Additionally, you will need to double check that there are no duplicate edges in
 				auto findNode = nodes_.find(node);
 				if (findNode != nodes_.end()) {
 					if (DEBUG) std::cout << "deleting " << node << std::endl;
-					//delete &*(findNode->second);
-					//if (findNode->second.unique()) std::cout << "test" << std::endl;
 					findNode->second.reset();
 					nodes_.erase(findNode);
 				} else {
@@ -501,6 +492,7 @@ Additionally, you will need to double check that there are no duplicate edges in
 				auto findDest = nodes_.find(dest);
 				if (findDest == nodes_.end()) throw std::runtime_error("addEdge: dest DNE");
 
+				// find if the edge exists in orig to dest
 				auto findEdge = std::find_if(findOrig->second->edges_.begin(), findOrig->second->edges_.end(),
 											[dest] (const std::shared_ptr<Edge>& e) {
 												if (auto tmp = e->dest.lock())
@@ -517,6 +509,7 @@ Additionally, you will need to double check that there are no duplicate edges in
 			
 			void printNodes() const
 			{
+				if (DEBUG) std::cout << "printNodes" << std::endl;
 				for (auto it = begin(); it != end(); ++it ) {
 					std::cout << *it << std::endl;
 				}
