@@ -42,5 +42,11 @@ test11: tests/test11.cpp Graph.h
 test12: tests/test12.cpp Graph.h
 	  $(CC) $(CFLAGS) tests/test12.cpp -o test12
 
+test13: tests/test13.cpp Graph.h
+	  $(CC) $(CFLAGS) tests/test13.cpp -o test13
+
+test14: tests/test14.cpp Graph.h
+	  $(CC) $(CFLAGS) tests/test14.cpp -o test14
+
 clean:
 	rm test0 test1 test2 test3 test4 test5 test6 test7 test8 test9 test10 test11 test12
